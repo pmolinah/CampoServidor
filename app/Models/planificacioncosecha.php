@@ -28,7 +28,7 @@ class planificacioncosecha extends Model
  
     public function contraistaxplanificacion()
     {
-        return $this->hasMany(Contraistaxplanificacion::class);
+        return $this->hasMany(contraistaxplanificacion::class);
     }
 
     public function exportadoraxplanificacion()
