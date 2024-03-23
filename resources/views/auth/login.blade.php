@@ -138,7 +138,7 @@
   <div class="flex bg-white p-5 rounded-lg shadow-lg overflow-hidden mx-auto max-w-sm lg:max-w-4xl">
         <div class=" mt-20 p-5 bg-neutral-100 rounded-lg shadow-lg shadow-neutral-800 hidden lg:block lg:w-1/2 bg-cover" style="width: 450px; height: 300px; background-image: url('{{ asset('storage/logoAgroges.png') }}');"></div>
         <div class="w-full p-8 mb-5 lg:w-1/2">
-            <h2 class="text-2xl font-semibold text-gray-700 text-center">AgroGes</h2>
+            <h2 class="text-2xl font-semibold text-gray-700 text-center">AgroPlanner</h2>
             <p class="text-xl text-gray-600 text-center">Sistema Administración de Campos</p>
            
             <div class="mt-4 flex items-center justify-between">
