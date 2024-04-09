@@ -6,7 +6,7 @@
       <h2 class="font-semibold text-xl text-gray-600">Formulario Registro de Empresas</h2>
       <p class="text-gray-500">Propietarios, Contratistas, Exportadoras, Proveedores</p>
 
-      <div class="bg-white rounded shadow-lg p-4 px-4 md:p-8 mb-20">
+      <div class="bg-white rounded shadow-lg p-4 px-4 md:p-8 mb-20 shadow-neutral-900">
         <div class="grid gap-4 gap-y-2 text-sm grid-cols-1 lg:grid-cols-3">
           <div class="text-gray-600">
             <p class="font-medium text-lg">Datos</p>

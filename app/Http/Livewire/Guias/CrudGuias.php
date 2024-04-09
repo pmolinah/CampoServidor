@@ -9,7 +9,7 @@ use App\Models\planificacioncosecha;
 use App\Models\exportadoraxplanificacion;
 use App\Models\detallecosecha;
 use App\Models\desgloseenvase;
-use App\models\cuentaenvase;
+use App\Models\cuentaenvase;
 use App\Models\detallecuentaenvase;
 use App\Models\envaseempresa;
 use App\Models\desgloseenvasecampo;
@@ -39,6 +39,7 @@ class CrudGuias extends Component
     public $numeroGuia=0;
     public $conductor_id;
     public $vehiculo_id;
+    public $Diferencia=0;
 
     public function mount()
     {
@@ -55,6 +56,7 @@ class CrudGuias extends Component
 
     public function generarGuiaDespacho(){
         
+        //consulta por el conductor y el camion
         if($this->conductor_id==NULL || $this->vehiculo_id==NULL){
             $this->dispatchBrowserEvent('ErrorCampoVacio', [
                 'title' => 'Error, Falta Vehículo o Conductor.',
@@ -63,7 +65,7 @@ class CrudGuias extends Component
             ]);
             return back();
         }
-        
+        //creando la guia de despacho
         $exportPlan=exportadoraxplanificacion::with('desgloseenvase')->where('id',$this->exportadorxplanificacionID)->get();
         foreach ($exportPlan as $exportadoraxpla){
             $saveGuia=guia::create([
@@ -82,7 +84,8 @@ class CrudGuias extends Component
          
             $saveGuia->update(['numero' => $saveGuia->id+1000]);
             exportadoraxplanificacion::where('id',$this->exportadorxplanificacionID)->update(['guiaDespacho'=>$saveGuia->id+1000]);
-
+            //fin
+            //detalle de la guia de despacho
             $detalleCosechaExp=detallecosecha::where('planificacioncosecha_id',$this->exportadorxplanificacionID)->where('exportadora_id',$exportadoraxpla->empresa_id)->get();
             foreach($detalleCosechaExp as $detalleCosecha)
             {  
@@ -95,31 +98,48 @@ class CrudGuias extends Component
                         'observacion'=>$detalleCosecha->tarjaenvase,
                     ]);
             }
-            $desgloseenvases=desgloseenvase::where('exportadoraxplanificacion_id',$exportadoraxpla->id)->get();
+            //fin
+            //proceso de descuento de envases en exportadora y campo, afecta sus cuentas corrientes
+            //desglose de envases de la cosecha
+            $desgloseenvases=desgloseenvase::where('exportadoraxplanificacion_id',$exportadoraxpla->id)->get(); //detaelle de envases usados en la cosecha
             foreach($desgloseenvases as $desgloseenvase){
-               $detallecuentaEnvases=detallecuentaenvase::where('cuentaenvase_id',$exportadoraxpla->cuentaenvase_id)->where('color_id',$desgloseenvase->color_id)->count();
+               $detallecuentaEnvases=detallecuentaenvase::where('cuentaenvase_id',$exportadoraxpla->cuentaenvase_id)->where('color_id',$desgloseenvase->color_id)->count();// busca si tiene la cuenta envase y color
+               $stockColor=detallecuentaenvase::where('cuentaenvase_id',$exportadoraxpla->cuentaenvase_id)->where('color_id',$desgloseenvase->color_id)->first(); 
+               //$this->diferencia=$stockColor->stock - $desgloseenvase->stock;           
+               //si tiene cuanta corriente la empresa y ademas el envase y color, le descuenta
                 if($detallecuentaEnvases>0){
-                    $detallecuentaEnvases=detallecuentaenvase::where('cuentaenvase_id',$exportadoraxpla->cuentaenvase_id)->where('color_id',$desgloseenvase->color_id)->decrement('stock',$desgloseenvase->stock);
-                    $cuentaEnvase=cuentaenvase::where('id',$exportadoraxpla->cuentaenvase_id)->decrement('saldo',$desgloseenvase->stock);
-                    $campodescuento=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->decrement('stock',$desgloseenvase->stock);
-                    $Campodescuentos=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->get();
-                    foreach($Campodescuentos as $campoDes){
-                        $campoDetalleDescuento=desgloseenvasecampo::where('color_id',$desgloseenvase->color_id)->where('envaseempresa_id',$campoDes->id)->decrement('stock',$desgloseenvase->stock);
+                    if($stockColor->stock >= $desgloseenvase->stock){ //si con lo que tiene le alcanza para descontar, descuenta, puede quedar en cero
+                        $detallecuentaEnvases=detallecuentaenvase::where('cuentaenvase_id',$exportadoraxpla->cuentaenvase_id)->where('color_id',$desgloseenvase->color_id)->decrement('stock',$desgloseenvase->stock);
+                        $cuentaEnvase=cuentaenvase::where('id',$exportadoraxpla->cuentaenvase_id)->decrement('saldo',$desgloseenvase->stock);
+                        $Campodescuentos=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->decrement('stock',$desgloseenvase->stock);
+                        //foreach($Campodescuentos as $campoDes){
+                            //$campoDetalleDescuento=desgloseenvasecampo::where('color_id',$desgloseenvase->color_id)->where('envaseempresa_id',$campoDes->id)->decrement('stock',$desgloseenvase->stock);
+                        //}
+                    }else{
+                        $detallecuentaEnvases=detallecuentaenvase::where('cuentaenvase_id',$exportadoraxpla->cuentaenvase_id)->where('color_id',$desgloseenvase->color_id)->decrement('stock',$desgloseenvase->stock);
+                        $cuentaEnvase=cuentaenvase::where('id',$exportadoraxpla->cuentaenvase_id)->decrement('saldo',$stockColor->stock);
+                        
+                        $this->diferencia=$desgloseenvase->stock - $stockColor->stock;
+
+                        $campodescuento=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->decrement('stock',$desgloseenvase->stock);
+                        
+                        $Campodescuentos=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->get();
+                        foreach($Campodescuentos as $campoDes){
+                            $campoDetalleDescuento=desgloseenvasecampo::where('color_id',$desgloseenvase->color_id)->where('envaseempresa_id',$campoDes->id)->decrement('stock',$this->diferencia);
+                        }
                     }
                 }else{
-                    //$campodescuento=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->decrement('stock',$desgloseenvase->stock);
-                    $campodescuentos=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->get();
+                    $this->diferencia=$desgloseenvase->stock - $stockColor->stock;
+
+                    $campodescuento=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->decrement('stock',$desgloseenvase->stock);
+                    
+                    $Campodescuentos=envaseempresa::where('campo_id',$exportadoraxpla->cuentaenvase->campo_id)->where('envase_id',$exportadoraxpla->cuentaenvase->envase_id)->get();
+                    foreach($Campodescuentos as $campoDes){
+                        $campoDetalleDescuento=desgloseenvasecampo::where('color_id',$desgloseenvase->color_id)->where('envaseempresa_id',$campoDes->id)->decrement('stock',$this->diferencia);
+                    }
+
                     $this->saldoNegativo=0;
                     $this->saldoNegativo=$this->saldoNegativo - $desgloseenvase->stock;
-                    foreach($campodescuentos as $campodescuento)
-                    {
-                        // desgloseenvasecampo::create([
-                        //     'envaseempresa_id'=>$campodescuento->id,         // si noi tiene cuenta de este color el campo no se le crea en megativo, consultar
-                        //     'color_id'=>$desgloseenvase->color_id,
-                        //     'stock'=>$this->saldoNegativo,
-                        // ]);   
-                    }
-                    //$cuentaEnvase=cuentaenvase::where('id',$exportadoraxpla->cuentaenvase_id)->decrement('saldo',$desgloseenvase->stock);
                     $this->saldoNegativo=0;
                     $this->saldoNegativo=$this->saldoNegativo - $desgloseenvase->stock;
                     detallecuentaenvase::create([

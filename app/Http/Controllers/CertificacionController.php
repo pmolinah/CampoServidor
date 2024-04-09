@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\plantacion;
 use App\Models\cuartel;
 use App\Models\campo;
-use App\Models\certificacionAsignada;
+use App\Models\certificacionasignada;
 use App\Models\certificacionasignadacuartel;
 use Illuminate\Support\Facades\Session;
 

@@ -172,7 +172,7 @@
                 </div>
                 <!-- Sidebar links -->
                 <nav aria-label="Main"
-                    class="bg-gray-900 flex-1 w-64 px-1 py-4 space-y-2 overflow-y-hidden hover:overflow-y-auto shadow-lg shadow-neutral-500 borded-2">
+                    class="bg-gray-900 flex-1 w-64 px-1 py-4 space-y-2 overflow-y-hidden hover:overflow-y-auto shadow-lg shadow-neutral-900" >
                     <!-- Dashboards links -->
                     @can('prod.menu.btn')
                         <div x-data="{ isActive: false, open: false }">
@@ -765,8 +765,8 @@
             </div>
             {{-- fin --}}
             <!-- Main content -->
-          
-            <main class="flex-1 p-1 bg-neutral-100">
+          <main class="flex-1 p-1 bg-white">
+            {{-- <main class="flex-1 p-1 bg-white bg-no-repeat bg-center bg-cover" style="background-image: url('{{ asset('storage/logoAgroges.png') }}');" > --}}
                 {{ $slot }}
                 <!-- component -->
                 <!-- This is an example component -->
